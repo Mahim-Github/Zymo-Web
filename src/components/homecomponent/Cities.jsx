@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
+// City names are grouped into 4 arrays, representing columns for display
 const cities = [
     [
         "Bangalore",
@@ -59,7 +60,7 @@ const cities = [
 
 const Cities = () => {
     const navigate = useNavigate();
-
+    // Navigates to the city-specific route when a city is clicked
     const handleCityClick = (city) => {
         navigate(`/self-drive-car-rentals/${city.toLowerCase()}`); // Navigate properly
     };
@@ -67,15 +68,18 @@ const Cities = () => {
 
     return (
         <>
- 
+            {/* Section: City availability listing */}
             <section className="text-black py-10">
                 <div className="bg-[#faffa4] mx-auto p-6 rounded-lg max-w-6xl">
+                     {/* Heading */}
                     <h2 className="text-xl font-bold mb-4 text-center">
                         Service Available In Cities
                     </h2>
+                     {/* Grid layout: Display cities*/}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 text-center md:text-left">
                         {cities.map((column, colIndex) => (
                             <div key={colIndex}>
+                            {/* Map through each city in the column */}
                                 {column.map((city, index) => (
                                     <button
                                         key={index}

@@ -1,5 +1,6 @@
+// Import helper functions
 import { getVendorDetails, toPascalCase } from "./helperFunctions";
-
+// Calculate total kilometers allowed based on trip duration and rate plans
 const getTotalKms = (tripDurationHours) => {
     return {
         FF: `${(120 / 24) * tripDurationHours} KMs`, // Fixed Fare - 120 KM/Day
@@ -7,20 +8,20 @@ const getTotalKms = (tripDurationHours) => {
         DR: "Unlimited KMs", // Daily Rental - Unlimited KM
     };
 };
-
+// Return readable string for each rate basis
 const findPackage = (rateBasis) => {
     if (rateBasis === "FF") return "120km/day";
     if (rateBasis === "MP") return "300km/day";
     if (rateBasis === "DR") return "Unlimited KMs";
     return "Undefined";
 };
-
+// Format date to MyChoize API expected format
 const formatDateForMyChoize = (dateString) => {
     const date = new Date(dateString);
     if (isNaN(date)) return null; // Handle invalid date input
     return `\/Date(${date.getTime()}+0530)\/`;
 };
-
+// Utility to retry fetch request on failure, with exponential delay
 const fetchWithRetry = async (url, options, retries = 5, delay = 500) => {
     for (let i = 0; i < retries; i++) {
         try {
@@ -35,10 +36,11 @@ const fetchWithRetry = async (url, options, retries = 5, delay = 500) => {
     }
     throw new Error("MyChoize API failed after multiple retries.");
 };
-
+// API URL from environment variable
 let apiUrl = import.meta.env.VITE_FUNCTIONS_API_URL;
 // const apiUrl = "http://127.0.0.1:5001/zymo-prod/us-central1/api";
 
+// Fetch subscription cars (MLK plan) from MyChoize
 const fetchSubscriptionCars = async (CityName, formattedPickDate, formattedDropDate) => {
     try {
         const response = await fetch(`${apiUrl}/mychoize/search-cars`, {
@@ -58,7 +60,7 @@ const fetchSubscriptionCars = async (CityName, formattedPickDate, formattedDropD
         if (!response.ok) throw new Error("MyChoize API error");
 
         const mychoizeData = await response.json();
-
+        // Ensure response contains expected model
         if (!mychoizeData.SearchBookingModel) {
             console.error("MyChoize API response missing expected data.");
             return [];
@@ -91,14 +93,14 @@ const fetchSubscriptionCars = async (CityName, formattedPickDate, formattedDropD
         return [];
     }
 };
-
+// Fetch regular MyChoize cars (non-subscription) and group by car type
 const fetchMyChoizeCars = async (
     CityName,
     formattedPickDate,
     formattedDropDate,
     tripDurationHours
 ) => {
-    
+    // Retry-enabled API fetch
     try {
         const mychoizeData = await fetchWithRetry(
             `${apiUrl}/mychoize/search-cars`,
@@ -119,7 +121,7 @@ const fetchMyChoizeCars = async (
             console.error("MyChoize API response missing expected data.");
             return [];
         }
-
+         // Group cars by GroupKey and enrich car info
         const groupedCars = {};
         mychoizeData.SearchBookingModel.filter(
             (car) => car.RateBasis !== "MLK" && car.BrandName
@@ -164,7 +166,7 @@ const fetchMyChoizeCars = async (
                     vtrSUVFlag: car.VTRSUVFlag,
                 };
             }
-
+             // Add fare based on rate basis
             groupedCars[key].rateBasisFare[car.RateBasis] = car.TotalExpCharge;
             Object.values(groupedCars[key].rateBasisFare).forEach((fare) => {
                 if (!groupedCars[key].all_fares.includes(fare)) {
@@ -173,8 +175,9 @@ const fetchMyChoizeCars = async (
             });
         });
 
+        // Get vendor details (like pricing multiplier)
         const vendorData = await getVendorDetails("mychoize");
-
+        // Format grouped cars with minimum and inflated fare
         return Object.values(groupedCars).map((car) => ({
             ...car,
             fare: `₹${Math.min(...car.all_fares)}`,
@@ -186,6 +189,7 @@ const fetchMyChoizeCars = async (
     }
 };
 
+// Fetch list of locations available in MyChoize for a given city and date
 const fetchMyChoizeLocationList = async (
     city,
     formattedDropDate,
@@ -209,7 +213,7 @@ const fetchMyChoizeLocationList = async (
         console.error(error.message);
     }
 };
-
+// Export utility and fetch functions
 export {
     findPackage,
     fetchMyChoizeCars,
