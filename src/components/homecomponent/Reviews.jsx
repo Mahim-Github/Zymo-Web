@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-
+// Array of customer testimonial objects
 const testimonials = [
     {
         quote: "Great app to compare best deals. It makes my renting experience so hassle-free and the best part is I got rewards too. Easy to use and one-stop destination for my renting needs.",
@@ -94,42 +94,64 @@ const testimonials = [
 ];
 
 const Reviews = () => {
+    // Reference to the scrolling container
     const scrollRef = useRef(null);
 
     useEffect(() => {
         const scrollContainer = scrollRef.current;
         let scrollAmount = 0;
 
+        // Set interval to scroll horizontally by 1px every 10ms
         const scrollInterval = setInterval(() => {
             if (scrollContainer) {
                 scrollAmount += 1;
                 scrollContainer.scrollLeft = scrollAmount;
 
+                // Reset scroll when halfway through total width for infinite effect
                 if (scrollAmount >= scrollContainer.scrollWidth / 2) {
-                    scrollAmount = 0; // Reset scroll
+                    scrollAmount = 0;
                 }
             }
-        }, 10); // Adjust speed for smoother scrolling
+        }, 10); // Controls speed of scroll
 
+        // Cleanup interval on component unmount
         return () => clearInterval(scrollInterval);
     }, []);
 
     return (
+        // Section wrapper with padding and white text
         <section className="text-white py-12">
+            {/* Header content for reviews */}
             <div className="text-center mb-8">
                 <h2 className="text-2xl font-bold">Our Customers Love Us</h2>
                 <p className="text-gray-400">We love hearing from happy customers</p>
             </div>
+
+            {/* Review slider container */}
             <div className="bg-darkGrey2 rounded-lg p-6 py-8 mx-auto max-w-4xl overflow-hidden">
-                <div ref={scrollRef} className="flex space-x-6 overflow-hidden  scroll-container">
+                {/* Scrollable row of testimonials */}
+                <div
+                    ref={scrollRef}
+                    className="flex space-x-6 overflow-hidden scroll-container"
+                >
+                    {/* Render each testimonial twice for seamless loop */}
                     {[...testimonials, ...testimonials].map((testimonial, index) => (
                         <div
                             key={index}
                             className="border border-[#faffa4] p-6 rounded-lg w-[300px] md:w-[350px] text-center flex-shrink-0"
                         >
-                            <p className="text-sm italic mb-4">"{testimonial.quote}"</p>
+                            {/* Customer quote */}
+                            <p className="text-sm italic mb-4">
+                                "{testimonial.quote}"
+                            </p>
+
+                            {/* Customer name, image, and star rating */}
                             <div className="flex items-center gap-3 mt-4">
-                                <img src={testimonial.imgSrc} alt={testimonial.name} className="w-10 h-10 rounded-full" />
+                                <img
+                                    src={testimonial.imgSrc}
+                                    alt={testimonial.name}
+                                    className="w-10 h-10 rounded-full"
+                                />
                                 <div className="text-left">
                                     <p className="font-semibold">{testimonial.name}</p>
                                     <p className="text-[#faffa4] text-sm">{testimonial.stars}</p>

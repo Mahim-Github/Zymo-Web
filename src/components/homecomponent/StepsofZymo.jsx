@@ -3,17 +3,25 @@ import React from 'react';
 export default function StepsofZymo() {
   return (
     <div>
+      {/* Main container with dark background */}
       <div className="bg-[#212121] text-white p-6">
+        {/* Centered content with max width */}
         <div className="max-w-4xl mx-auto">
+          {/* Section heading */}
           <h2 className="text-2xl font-bold text-center">
             A quick guide to ZYMO
           </h2>
+          {/* Subheading with gray text */}
           <p className="text-gray-400 mb-8 text-center">
             Here's how the Zymo works, step by step:
           </p>
 
+          {/* Timeline container */}
           <div className="relative flex flex-col items-center">
+            {/* Vertical timeline line */}
             <div className="w-1 bg-gray-300 absolute top-0 bottom-0 left-1/2 transform -translate-x-1/2"></div>
+            
+            {/* Mapping through steps array to render each timeline item */}
             {[
               {
                 title: "Getting Started",
@@ -41,16 +49,20 @@ export default function StepsofZymo() {
                 image: "/images/About/image5.png",
               },
             ].map((step, index) => (
+              // Timeline item container
               <div key={index} className="flex items-center mb-8 w-full relative">
+                {/* Left side (image) */}
                 <div className="w-1/2 pr-6 flex justify-end">
                   <img
                     src={step.image}
                     alt={step.title}
                     className="w-full max-w-[250px] h-auto rounded object-cover"
-                    style={{ maxHeight: '200px', objectFit: 'contain' }} // Add style to control image size
+                    style={{ maxHeight: '200px', objectFit: 'contain' }} // Image styling
                   />
                 </div>
+                {/* Timeline dot */}
                 <div className="w-4 h-4 bg-white rounded-full absolute left-1/2 transform -translate-x-1/2"></div>
+                {/* Right side (text content) */}
                 <div className="w-1/2 pl-6 relative">
                   <h3 className="font-semibold text-lg">{step.title}</h3>
                   <p className="text-gray-300">{step.text}</p>

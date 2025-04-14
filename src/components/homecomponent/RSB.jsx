@@ -6,19 +6,20 @@ import { toast } from "react-toastify";
 import { getCurrentTime } from "../../utils/DateFunction.js";
 
 const RSB = () => {
-    const [activeTab, setActiveTab] = useState("rent");
-    const [place, setPlace] = useState(null);
-    const [autocomplete, setAutocomplete] = useState(null);
-    const [city, setCity] = useState("");
-    const [address, setAddress] = useState("");
-    const [startDate, setStartDate] = useState(getCurrentTime());
-    const [endDate, setEndDate] = useState("");
-    const [tripDuration, setTripDuration] = useState("Select both dates");
-    const [fade, setFade] = useState(false);
+    // --- STATE MANAGEMENT ---
+    const [activeTab, setActiveTab] = useState("rent"); // Toggle between rent/buy
+    const [place, setPlace] = useState(null); // Full place details with lat/lng
+    const [autocomplete, setAutocomplete] = useState(null); // Google Autocomplete object
+    const [city, setCity] = useState(""); // Parsed city name from address
+    const [address, setAddress] = useState(""); // Formatted address
+    const [startDate, setStartDate] = useState(getCurrentTime()); // Rental start datetime
+    const [endDate, setEndDate] = useState(""); // Rental end datetime
+    const [tripDuration, setTripDuration] = useState("Select both dates"); // Duration text
+    const [fade, setFade] = useState(false); // For header fade animation
 
     const navigate = useNavigate();
 
-    // Changing Header Text
+    // --- HEADER TEXT ANIMATION ---
     const headerTexts = [
         "Smart rentals, easy driving",
         "Affordable rides for less",
@@ -27,46 +28,47 @@ const RSB = () => {
         "Compare and save on rental",
     ];
     const [headerIndex, setHeaderIndex] = useState(0);
+    
     useEffect(() => {
         const interval = setInterval(() => {
-            setFade(true);
+            setFade(true); // Trigger fade
             setTimeout(() => {
-                setHeaderIndex(
-                    (prevIndex) => (prevIndex + 1) % headerTexts.length
-                );
-                setFade(false);
+                setHeaderIndex((prev) => (prev + 1) % headerTexts.length); // Cycle headers
+                setFade(false); // End fade
             }, 500);
         }, 3000);
         return () => clearInterval(interval);
     }, []);
 
-    // Places API
-    const placesAPILibraries = useMemo(() => ["places"], []);
+    // --- GOOGLE PLACES API SETUP ---
+    const placesAPILibraries = useMemo(() => ["places"], []); // Memoize to prevent unnecessary re-renders
     const placesAPIKey = import.meta.env.VITE_PLACES_API_KEY;
 
+    // Called on place selection
     const handlePlaceSelect = () => {
         if (autocomplete) {
             const placeDetails = autocomplete.getPlace();
             if (placeDetails.geometry) {
                 const lat = placeDetails.geometry.location.lat();
                 const lng = placeDetails.geometry.location.lng();
+
                 setPlace({ name: placeDetails.name, lat, lng });
 
+                // Extract a simplified address
                 let address = placeDetails.formatted_address.split(",");
-                address =
-                    address.length > 2
-                        ? `${address[0]}, ${address[1]}, ${address.at(-2)}`
-                        : address;
+                address = address.length > 2
+                    ? `${address[0]}, ${address[1]}, ${address.at(-2)}`
+                    : address.join(", ");
                 setAddress(address);
 
-                // FIXME: Fix this
+                // Get city from address_components
                 const cityComponent = placeDetails.address_components.find(
-                    (component) => component.types.includes("locality")
+                    (comp) => comp.types.includes("locality")
                 );
 
                 if (cityComponent) {
                     setCity(cityComponent.long_name);
-                    console.log(city);
+                    console.log(cityComponent.long_name);
                 } else {
                     console.error("No city found");
                     setCity("");
@@ -75,67 +77,59 @@ const RSB = () => {
         }
     };
 
-    // Calculate Trip duration
-    const calculateDuration = (currentStartDate, currentEndDate) => {
-        const start = new Date(currentStartDate);
-        const end = new Date(currentEndDate);
+    // --- TRIP DURATION CALCULATION ---
+    const calculateDuration = (start, end) => {
+        const startTime = new Date(start);
+        const endTime = new Date(end);
 
-        if (isNaN(start) || isNaN(end)) {
+        if (isNaN(startTime) || isNaN(endTime)) {
             setTripDuration("Invalid Date");
             return;
         }
 
-        const timeDifference = end - start;
-        if (timeDifference < 0) {
+        const diff = endTime - startTime;
+        if (diff < 0) {
             setTripDuration("0 Day(s) 0 Hour(s)");
             return;
         }
 
-        const totalHours = Math.floor(timeDifference / (1000 * 60 * 60));
+        const totalHours = Math.floor(diff / (1000 * 60 * 60));
         const days = Math.floor(totalHours / 24);
         const hours = totalHours % 24;
 
         setTripDuration(`${days} Day(s) ${hours} Hour(s)`);
     };
 
+    // --- INPUT DATE HANDLING ---
     const startInputRef = useRef(null);
     const endInputRef = useRef(null);
 
     const handleStartDateClick = () => {
-        if (startInputRef.current) {
-            startInputRef.current.showPicker();
-        }
+        if (startInputRef.current) startInputRef.current.showPicker();
     };
-
     const handleEndDateClick = () => {
-        if (endInputRef.current) {
-            endInputRef.current.showPicker();
-        }
+        if (endInputRef.current) endInputRef.current.showPicker();
     };
 
     const handleStartDateChange = (e) => {
-        const newStartDate = e.target.value;
-        setStartDate(newStartDate);
-        if (endDate) {
-            calculateDuration(newStartDate, endDate);
-        }
-    };
-    const handleEndDateChange = (e) => {
-        const newEndDate = e.target.value;
-        setEndDate(newEndDate);
-        if (startDate) {
-            calculateDuration(startDate, newEndDate);
-        }
+        const newStart = e.target.value;
+        setStartDate(newStart);
+        if (endDate) calculateDuration(newStart, endDate);
     };
 
+    const handleEndDateChange = (e) => {
+        const newEnd = e.target.value;
+        setEndDate(newEnd);
+        if (startDate) calculateDuration(startDate, newEnd);
+    };
+
+    // --- SEARCH ACTION ---
     const handleSearch = () => {
         if (city && startDate && endDate) {
-            const lat = place.lat;
-            const lng = place.lng;
-            const formattedCity =
-                city === "Bengaluru" ? "bangalore" : city.toLowerCase();
+            const { lat, lng } = place;
+            const formattedCity = city === "Bengaluru" ? "bangalore" : city.toLowerCase();
 
-            const stateData = {
+            const searchData = {
                 address,
                 lat,
                 lng,
@@ -144,23 +138,27 @@ const RSB = () => {
                 tripDuration,
             };
 
-            sessionStorage.setItem("fromSearch", true);
+            sessionStorage.setItem("fromSearch", true); // flag for post navigation logic
 
+            // Redirect to the filtered results page
             navigate(`/self-drive-car-rentals/${formattedCity}/cars`, {
-                state: stateData,
+                state: searchData,
             });
         } else {
+            // Show error if any required field is missing
             toast.error("Required fields are empty", {
                 position: "top-center",
-                autoClose: 1000 * 5,
+                autoClose: 5000,
             });
         }
     };
 
     return (
+        // Main container with background, padding, and centering
         <div className=" bg-[#212121] p-4 flex items-center justify-center my-5 mt-7">
             <div className="w-full max-w-lg space-y-4 p-2 py-4 rounded-lg">
-                {/* Header */}
+    
+                {/* Header with dynamic text and icons */}
                 <div className="bg-[#303030] rounded-full p-3">
                     <h1
                         className={`text-white text-center text-md transition-opacity duration-500 ${
@@ -172,16 +170,16 @@ const RSB = () => {
                         <SparklesIcon className="inline-block w-5 h-5 ml-2 text-[#faffa4]" />
                     </h1>
                 </div>
-
-                {/* Book Now Section */}
+    
+                {/* Book Now section title with horizontal lines */}
                 <div className="text-center">
                     <div className="flex items-center justify-center gap-4 mb-2">
                         <div className="w-20 h-[1px] bg-gray-500"></div>
-                        <h2 className="text-gray-400  font-normal">BOOK NOW</h2>
+                        <h2 className="text-gray-400 font-normal">BOOK NOW</h2>
                         <div className="w-20 h-[1px] bg-gray-500"></div>
                     </div>
-
-                    {/* Tabs */}
+    
+                    {/* Tabs for Rent, Subscribe, Buy */}
                     <div className="flex justify-center gap-8 mb-6">
                         <button
                             onClick={() => setActiveTab("rent")}
@@ -214,40 +212,41 @@ const RSB = () => {
                             Buy
                         </button>
                     </div>
-
-                    {/* Location Input */}
+    
+                    {/* Location input with Google Places Autocomplete */}
                     <LoadScriptNext googleMapsApiKey={placesAPIKey} libraries={placesAPILibraries}>
-  <div className="bg-[#303030] rounded-full py-3 px-6 flex justify-between items-center mb-4">
-    <div className="flex items-center flex-grow">
-      <MapPinIcon className="w-6 h-5 text-gray-400 mr-2" />
-      <Autocomplete
-        onLoad={setAutocomplete}
-        onPlaceChanged={handlePlaceSelect}
-        options={{ componentRestrictions: { country: "IN" } }}
-      >
-        <input
-          type="text"
-          placeholder="Enter a location"
-          className="bg-[#303030] text-white outline-none w-full pl-2"
-        />
-      </Autocomplete>
-    </div>
-    <button className="flex flex-col items-center text-white text-xs hover:text-[#faffa4]">
-    <img src="../public/images/Benefits/Group_1-removebg-preview.png" alt="Current Location" className="w-5 h-5" />
-    <span>Current Location</span>
-</button>
-  </div>
-</LoadScriptNext>
-
-                    {/* Date Inputs */}
+                        <div className="bg-[#303030] rounded-full py-3 px-6 flex justify-between items-center mb-4">
+                            <div className="flex items-center flex-grow">
+                                <MapPinIcon className="w-6 h-5 text-gray-400 mr-2" />
+                                <Autocomplete
+                                    onLoad={setAutocomplete}
+                                    onPlaceChanged={handlePlaceSelect}
+                                    options={{ componentRestrictions: { country: "IN" } }}
+                                >
+                                    <input
+                                        type="text"
+                                        placeholder="Enter a location"
+                                        className="bg-[#303030] text-white outline-none w-full pl-2"
+                                    />
+                                </Autocomplete>
+                            </div>
+    
+                            {/* Button for using current location */}
+                            <button className="flex flex-col items-center text-white text-xs hover:text-[#faffa4]">
+                                <img src="../public/images/Benefits/Group_1-removebg-preview.png" alt="Current Location" className="w-5 h-5" />
+                                <span>Current Location</span>
+                            </button>
+                        </div>
+                    </LoadScriptNext>
+    
+                    {/* Date pickers for start and end date */}
                     <div className="grid grid-cols-2 gap-4 mb-4">
-                        {/* Start Date Picker */}
+                        {/* Start date picker */}
                         <div
                             className="bg-[#303030] rounded-full p-2 flex items-center relative cursor-pointer text-sm"
                             onClick={handleStartDateClick}
                         >
                             <CalendarIcon className="w-6 h-5 text-gray-400 absolute left-3 " />
-
                             <input
                                 type="datetime-local"
                                 step="3600"
@@ -269,8 +268,8 @@ const RSB = () => {
                                     : "Select Date"}
                             </span>
                         </div>
-
-                        {/* End Date Picker */}
+    
+                        {/* End date picker */}
                         <div
                             className="bg-[#303030] rounded-full p-2 flex items-center relative cursor-pointer text-sm"
                             onClick={handleEndDateClick}
@@ -284,7 +283,6 @@ const RSB = () => {
                                 onChange={handleEndDateChange}
                                 className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
                             />
-
                             <span className="text-white pl-8">
                                 {endDate
                                     ? new Intl.DateTimeFormat("en-US", {
@@ -299,16 +297,16 @@ const RSB = () => {
                             </span>
                         </div>
                     </div>
-
-                    {/* Trip Duration */}
+    
+                    {/* Display calculated trip duration */}
                     <div className="bg-[#303030] rounded-full p-2 mb-4">
                         <div className="text-gray-400 text-sm">
                             Trip Duration
                         </div>
                         <div className="text-white text-lg">{tripDuration}</div>
                     </div>
-
-                    {/* Search Button */}
+    
+                    {/* Search button */}
                     <button
                         onClick={handleSearch}
                         className="w-full bg-[#eeff87] hover:bg-[#e2ff5d] text-black font-medium py-3 rounded-full transition-colors"
@@ -318,7 +316,7 @@ const RSB = () => {
                 </div>
             </div>
         </div>
-    );
+    );    
 };
 
 export default RSB;
