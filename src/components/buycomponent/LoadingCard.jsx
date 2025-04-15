@@ -1,8 +1,10 @@
 const LoadingCard = () => {
     return (
+      // Main container with responsive layout and loading animation
       <div className="flex flex-col md:flex-row bg-[#303030] border border-gray-500 rounded-2xl p-4 py-1 text-white mx-auto w-full max-w-[900px] min-h-[300px] md:items-center animate-pulse">
         {/* Left Section: Car Details (Skeleton) */}
         <div className="flex md:flex-col justify-between w-full md:w-1/3 text-center md:text-left gap-8">
+          {/* Car name and model placeholders */}
           <div>
             <div className="h-6 w-32 bg-gray-500 rounded-md mb-2"></div>
             <div className="h-5 w-20 bg-gray-500 rounded-md"></div>
