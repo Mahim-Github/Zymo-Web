@@ -3,17 +3,22 @@ import { useNavigate } from "react-router-dom";
 import { useEffect,useCallback ,useRef} from 'react';
 import useTrackEvent from "../../hooks/useTrackEvent";
 
-
+// Component for confirming an extended test drive booking
 const ExtendedTestDriveConfirmPage = ({ isOpen, close, bookingData }) => {
+  // Navigation hook for redirecting
   const navigate = useNavigate();
+  // Custom hook for tracking events
   const trackEvent = useTrackEvent();
 
+  // Refs to track processing state and event tracking
   const isProcessing = useRef(false);
   const processingComplete = useRef(false);
   const eventTracked = useRef(false);
 
+  // URL for API functions
   const functionsUrl = import.meta.env.VITE_FUNCTIONS_API_URL;
 
+  // Callback function to send WhatsApp message with booking data
   const sendWhatsAppMessage = useCallback(async (bookingData) => {
     try {
       const response = await fetch(`${functionsUrl}/message/extended-test-drive-whatsapp-message`, {
@@ -25,7 +30,7 @@ const ExtendedTestDriveConfirmPage = ({ isOpen, close, bookingData }) => {
       });
 
       const data = await response.json();
-      // console.log("WhatsApp Message Response:", data);
+      // Clear local and session storage after successful message
       localStorage.clear();
       sessionStorage.clear();
     } catch (error) {
@@ -33,12 +38,15 @@ const ExtendedTestDriveConfirmPage = ({ isOpen, close, bookingData }) => {
     }
   },[functionsUrl]);
 
+  // Effect to process booking when component opens
   useEffect(() => {
     const processBooking = async () => {
+      // Skip if not open, no booking data, or already processing/complete
       if (!isOpen || !bookingData || isProcessing.current || processingComplete.current) {
         return;
       }
 
+      // Track event only once when modal opens
       if (isOpen && !eventTracked.current) {
         trackEvent("Extended Test Drive Booking", "Extended Test Drive", "Payment Successful/Booking Confirmed");
         eventTracked.current = true; 
@@ -48,8 +56,6 @@ const ExtendedTestDriveConfirmPage = ({ isOpen, close, bookingData }) => {
         isProcessing.current = true;
         await sendWhatsAppMessage(bookingData);
         processingComplete.current = true;
-        
-        // console.log('Extended test drive booking processed successfully');
       } catch (error) {
         console.error('Error processing extended test drive booking:', error);
       } finally {
@@ -60,6 +66,7 @@ const ExtendedTestDriveConfirmPage = ({ isOpen, close, bookingData }) => {
     processBooking();
   }, [isOpen, bookingData, sendWhatsAppMessage, trackEvent]);
 
+  // Effect to auto-close modal after 8 seconds
   useEffect(() => {
     if (!isOpen) return;
 
@@ -71,7 +78,7 @@ const ExtendedTestDriveConfirmPage = ({ isOpen, close, bookingData }) => {
     return () => clearTimeout(timer);
   }, [isOpen, close, navigate]);
 
-  // Handle button click
+  // Handler for manual confirmation button click
   const handleConfirm = () => {
     localStorage.clear();
     sessionStorage.clear();
@@ -79,8 +86,10 @@ const ExtendedTestDriveConfirmPage = ({ isOpen, close, bookingData }) => {
     navigate("/", { replace: true });
   };
 
+  // Don't render if not open
   if (!isOpen) return null;
 
+  // Render confirmation modal
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50">
       <div className="bg-[#2A2A2A] rounded-lg shadow-lg p-6 w-80 text-center">
